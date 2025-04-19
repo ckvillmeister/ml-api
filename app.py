@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import joblib
 import re
 import nltk
@@ -32,6 +32,24 @@ def review_movie():
         pred = model.predict(transformed)[0]
         prediction = 'Positive' if pred == 1 else 'Negative'
     return prediction
+
+@app.route('/review-movie-call', methods=['POST'])
+def review():
+    data = request.get_json()
+
+    if not data or 'review' not in data:
+        return jsonify({'error': 'Missing review text'}), 400
+
+    review_text = data['review']
+    cleaned = preprocess(review_text)
+    vectorized = vectorizer.transform([cleaned])
+    prediction = model.predict(vectorized)[0]
+
+    return jsonify({
+        'review': review_text,
+        'sentiment': 'Positive' if prediction == 1 else 'Negative',
+        'prediction': int(prediction)
+    })
 
 if __name__ == '__main__':
     app.run(debug=False)
